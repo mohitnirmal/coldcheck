@@ -1,5 +1,8 @@
 # Keep only the coldcheck site in this repository.
 *
 !.gitignore
+!.github/
+!.github/workflows/
+!.github/workflows/**
 !coldcheck/
 !coldcheck/**
