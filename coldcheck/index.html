@@ -1,0 +1,1956 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>coldcheck</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link
+    href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;700&family=JetBrains+Mono:wght@400;600;700&display=swap"
+    rel="stylesheet"
+  >
+  <style>
+    :root {
+      --bg: #0d0d0d;
+      --panel: #121212;
+      --panel-alt: #101010;
+      --text: #f0ede8;
+      --muted: #9d988f;
+      --border: #2a2a2a;
+      --hover: #1a1a1a;
+      --critical: #ff4444;
+      --high: #ff8c00;
+      --medium: #f5c518;
+      --low: #aaaaaa;
+      --pass: #22c55e;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      min-height: 100%;
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "DM Sans", sans-serif;
+    }
+
+    button,
+    input,
+    textarea {
+      font: inherit;
+      color: inherit;
+    }
+
+    .app-shell {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .app-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      padding: 18px 24px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .brand {
+      font-size: 1.25rem;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: lowercase;
+    }
+
+    .header-meta {
+      color: var(--muted);
+      font-size: 0.95rem;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
+    .status-pill {
+      border: 1px solid rgba(34, 197, 94, 0.45);
+      color: var(--pass);
+      background: rgba(34, 197, 94, 0.08);
+      padding: 9px 12px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      border-radius: 4px;
+    }
+
+    .header-button,
+    .header-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      border: 1px solid var(--border);
+      background: var(--panel-alt);
+      color: var(--text);
+      padding: 11px 14px;
+      text-decoration: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 120ms ease;
+    }
+
+    .header-button:hover,
+    .header-link:hover {
+      background: var(--hover);
+    }
+
+    .app-main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1.05fr) minmax(320px, 0.95fr);
+    }
+
+    .panel {
+      min-width: 0;
+      padding: 24px;
+    }
+
+    .panel + .panel {
+      border-left: 1px solid var(--border);
+    }
+
+    .panel-title {
+      margin: 0 0 18px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .field-label {
+      font-size: 0.95rem;
+      font-weight: 500;
+    }
+
+    .field-meta {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      color: var(--muted);
+      font-size: 0.8rem;
+    }
+
+    .counter {
+      font-family: "JetBrains Mono", monospace;
+      color: var(--muted);
+    }
+
+    .counter.over-limit {
+      color: var(--critical);
+    }
+
+    .text-input,
+    .text-area {
+      width: 100%;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      color: var(--text);
+      padding: 14px 16px;
+      outline: none;
+      border-radius: 4px;
+    }
+
+    .text-input:focus,
+    .text-area:focus,
+    .action-button:focus {
+      border-color: var(--text);
+    }
+
+    .text-area {
+      min-height: 360px;
+      resize: vertical;
+      font-family: "JetBrains Mono", monospace;
+      line-height: 1.6;
+    }
+
+    .action-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      border: 1px solid var(--border);
+      background: var(--panel-alt);
+      padding: 14px 18px;
+      text-align: center;
+      text-decoration: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 120ms ease;
+    }
+
+    .action-button:hover {
+      background: var(--hover);
+    }
+
+    .action-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 10px;
+      align-items: stretch;
+    }
+
+    .preview-card {
+      margin-top: 20px;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+
+    .preview-header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+      font-size: 0.8rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .preview-body {
+      min-height: 120px;
+      padding: 16px;
+      font-family: "JetBrains Mono", monospace;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      color: var(--muted);
+      position: relative;
+    }
+
+    .preview-body.is-populated {
+      color: var(--text);
+    }
+
+    mark {
+      padding: 0 2px;
+      cursor: pointer;
+      position: relative;
+    }
+
+    mark.critical {
+      background: rgba(255, 68, 68, 0.25);
+      color: var(--critical);
+      border-bottom: 1px solid var(--critical);
+    }
+
+    mark.high {
+      background: rgba(255, 140, 0, 0.22);
+      color: var(--high);
+      border-bottom: 1px solid var(--high);
+    }
+
+    mark.medium {
+      background: rgba(245, 197, 24, 0.2);
+      color: var(--medium);
+      border-bottom: 1px solid var(--medium);
+    }
+
+    mark.low {
+      background: rgba(170, 170, 170, 0.2);
+      color: var(--text);
+      border-bottom: 1px solid var(--low);
+    }
+
+    .mark-tooltip {
+      position: absolute;
+      z-index: 5;
+      max-width: 280px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      background: #080808;
+      color: var(--text);
+      font-family: "DM Sans", sans-serif;
+      font-size: 0.84rem;
+      line-height: 1.5;
+      box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.02);
+    }
+
+    .mark-tooltip strong {
+      display: block;
+      margin-bottom: 4px;
+      text-transform: capitalize;
+    }
+
+    .results-panel[hidden] {
+      display: none;
+    }
+
+    .results-content.is-visible {
+      animation: panel-slide-in 220ms ease-out;
+    }
+
+    .results-empty {
+      min-height: 100%;
+      display: grid;
+      place-items: center;
+      border: 1px solid var(--border);
+      background: var(--panel);
+      padding: 28px 24px;
+    }
+
+    .results-empty[hidden] {
+      display: none;
+    }
+
+    .empty-state {
+      display: grid;
+      justify-items: center;
+      gap: 16px;
+      text-align: center;
+      max-width: 360px;
+    }
+
+    .empty-gauge {
+      width: 190px;
+      height: 190px;
+    }
+
+    .empty-copy {
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .results-content[hidden] {
+      display: none;
+    }
+
+    .results-grid {
+      display: grid;
+      gap: 18px;
+    }
+
+    .result-card {
+      border: 1px solid var(--border);
+      background: var(--panel);
+      padding: 18px;
+      border-radius: 4px;
+    }
+
+    .result-heading {
+      margin: 0 0 10px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+
+    .score-placeholder {
+      min-height: 180px;
+      display: grid;
+      place-items: center;
+      border: 1px dashed var(--border);
+      font-family: "JetBrains Mono", monospace;
+      color: var(--muted);
+    }
+
+    .score-gauge {
+      display: grid;
+      gap: 12px;
+      justify-items: center;
+    }
+
+    .gauge-wrap {
+      position: relative;
+      width: 190px;
+      height: 190px;
+    }
+
+    .gauge-svg {
+      width: 100%;
+      height: 100%;
+      transform: rotate(-90deg);
+    }
+
+    .gauge-track {
+      fill: none;
+      stroke: #232323;
+      stroke-width: 14;
+    }
+
+    .gauge-progress {
+      fill: none;
+      stroke-width: 14;
+      stroke-linecap: round;
+      transition: stroke 160ms ease;
+    }
+
+    .gauge-center {
+      position: absolute;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    .gauge-score {
+      font-size: 2.5rem;
+      font-weight: 700;
+      line-height: 1;
+    }
+
+    .gauge-total {
+      font-size: 0.9rem;
+      color: var(--muted);
+    }
+
+    .score-grade {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 1.5rem;
+      font-weight: 700;
+    }
+
+    .score-verdict {
+      color: var(--muted);
+      text-align: center;
+      line-height: 1.5;
+      max-width: 320px;
+    }
+
+    .result-placeholder {
+      min-height: 112px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .results-list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .tier-group {
+      display: grid;
+      gap: 8px;
+    }
+
+    .tier-heading {
+      margin: 0;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .tier-heading.critical {
+      color: var(--critical);
+    }
+
+    .tier-heading.high {
+      color: var(--high);
+    }
+
+    .tier-heading.medium {
+      color: var(--medium);
+    }
+
+    .tier-heading.low {
+      color: var(--low);
+    }
+
+    .spam-pill-list {
+      display: grid;
+      gap: 8px;
+    }
+
+    .spam-pill {
+      display: grid;
+      gap: 4px;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      background: #0f0f0f;
+      border-left-width: 3px;
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    .spam-pill.critical {
+      border-left-color: var(--critical);
+    }
+
+    .spam-pill.high {
+      border-left-color: var(--high);
+    }
+
+    .spam-pill.medium {
+      border-left-color: var(--medium);
+    }
+
+    .spam-pill.low {
+      border-left-color: var(--low);
+    }
+
+    .spam-pill-word {
+      color: var(--text);
+      font-size: 0.95rem;
+    }
+
+    .spam-pill-context {
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+
+    .check-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .check-row {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 10px;
+      align-items: start;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      background: #0f0f0f;
+    }
+
+    .check-icon {
+      font-weight: 700;
+      line-height: 1.2;
+    }
+
+    .check-icon.pass {
+      color: var(--pass);
+    }
+
+    .check-icon.fail {
+      color: var(--critical);
+    }
+
+    .check-copy {
+      color: var(--text);
+      line-height: 1.45;
+    }
+
+    .results-footer {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .results-hint {
+      padding: 14px 16px;
+      border: 1px solid var(--border);
+      background: #101010;
+      color: var(--muted);
+      line-height: 1.55;
+    }
+
+    .results-actions {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 10px;
+    }
+
+    .secondary-button {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 100%;
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      padding: 12px 14px;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background-color 120ms ease;
+    }
+
+    .secondary-button:hover {
+      background: var(--hover);
+    }
+
+    .secondary-button.is-active {
+      border-color: var(--pass);
+      color: var(--pass);
+    }
+
+    .pro-card[hidden] {
+      display: none;
+    }
+
+    .pro-copy {
+      color: var(--muted);
+      line-height: 1.55;
+      margin-bottom: 14px;
+    }
+
+    .pro-chip-list {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+
+    .pro-chip {
+      border: 1px solid var(--border);
+      background: #0f0f0f;
+      padding: 12px;
+      font-size: 0.88rem;
+      color: var(--text);
+    }
+
+    .pro-chip strong {
+      display: block;
+      font-size: 0.78rem;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--pass);
+      margin-bottom: 4px;
+    }
+
+    .pro-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .modal[hidden] {
+      display: none;
+    }
+
+    .modal {
+      position: fixed;
+      inset: 0;
+      z-index: 30;
+    }
+
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.7);
+    }
+
+    .modal-panel {
+      position: relative;
+      z-index: 1;
+      width: min(560px, calc(100vw - 32px));
+      margin: 6vh auto;
+      border: 1px solid var(--border);
+      background: #101010;
+      padding: 22px;
+      border-radius: 4px;
+    }
+
+    .modal-title-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+    }
+
+    .modal-title {
+      margin: 0 0 8px;
+      font-size: 1.35rem;
+      line-height: 1.2;
+    }
+
+    .modal-copy {
+      margin: 0 0 18px;
+      color: var(--muted);
+      line-height: 1.6;
+    }
+
+    .modal-close {
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text);
+      width: 38px;
+      height: 38px;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .feature-list {
+      display: grid;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .feature-row {
+      border: 1px solid var(--border);
+      background: #0d0d0d;
+      padding: 12px 14px;
+      color: var(--text);
+      line-height: 1.5;
+    }
+
+    .pricing-row {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+      font-family: "JetBrains Mono", monospace;
+    }
+
+    .price-pill {
+      border: 1px solid var(--border);
+      padding: 10px 12px;
+      background: #0d0d0d;
+    }
+
+    .modal-actions {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+
+    .license-feedback {
+      min-height: 22px;
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.84rem;
+    }
+
+    .license-feedback.is-success {
+      color: var(--pass);
+    }
+
+    .license-feedback.is-error {
+      color: var(--critical);
+    }
+
+    .modal-note {
+      margin-top: 12px;
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.5;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+    }
+
+    @keyframes panel-slide-in {
+      from {
+        opacity: 0;
+        transform: translateX(10px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    @media (max-width: 900px) {
+      .app-main {
+        grid-template-columns: 1fr;
+      }
+
+      .app-header {
+        align-items: flex-start;
+        flex-direction: column;
+      }
+
+      .header-actions {
+        width: 100%;
+        justify-content: flex-start;
+      }
+
+      .action-row,
+      .pro-actions,
+      .modal-actions,
+      .pro-chip-list {
+        grid-template-columns: 1fr;
+      }
+
+      .panel + .panel {
+        border-left: 0;
+        border-top: 1px solid var(--border);
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div>
+        <div class="brand">coldcheck</div>
+        <div class="header-meta">Lightweight cold email deliverability checker</div>
+      </div>
+
+      <div class="header-actions">
+        <div class="status-pill" id="pro-status-badge" hidden>Pro Unlocked</div>
+        <button class="header-button" id="license-button" type="button">Enter License Key</button>
+        <button class="header-button" id="pro-button" type="button">Pro</button>
+      </div>
+    </header>
+
+    <main class="app-main">
+      <section class="panel input-panel" aria-labelledby="input-title">
+        <h1 class="panel-title" id="input-title">Input</h1>
+
+        <label class="field" for="subject-input">
+          <span class="field-label">Subject line</span>
+          <input
+            class="text-input"
+            id="subject-input"
+            name="subject"
+            type="text"
+            autocomplete="off"
+            placeholder="Quick question about your outbound funnel"
+          >
+          <div class="field-meta">
+            <span>Keep it short, plain, and specific.</span>
+            <span class="counter" id="subject-counter">0 / 50</span>
+          </div>
+        </label>
+
+        <label class="field" for="body-input">
+          <span class="field-label">Email body</span>
+          <textarea
+            class="text-area"
+            id="body-input"
+            name="body"
+            placeholder="Paste your cold email here..."
+          ></textarea>
+          <div class="field-meta">
+            <span>Shortcut: Cmd/Ctrl + Enter to run a check.</span>
+            <span class="counter" id="body-counter">0 words</span>
+          </div>
+        </label>
+
+        <div class="action-row">
+          <button class="action-button" id="check-email-button" type="button">
+            Check My Email
+          </button>
+          <button class="secondary-button" id="clear-button" type="button">
+            Clear
+          </button>
+        </div>
+
+        <div class="preview-card">
+          <div class="preview-header">Inline Preview</div>
+          <div class="preview-body" id="preview">Flagged words will glow here after you run a check.</div>
+        </div>
+      </section>
+
+      <section class="panel results-panel" id="results-panel" aria-labelledby="results-title">
+        <h2 class="panel-title" id="results-title">Results</h2>
+
+        <div class="results-empty" id="results-empty">
+          <div class="empty-state">
+            <svg class="empty-gauge" viewBox="0 0 200 200" aria-hidden="true">
+              <circle cx="100" cy="100" r="76" fill="none" stroke="#232323" stroke-width="14"></circle>
+              <circle
+                cx="100"
+                cy="100"
+                r="76"
+                fill="none"
+                stroke="#2f2f2f"
+                stroke-width="14"
+                stroke-dasharray="8 10"
+              ></circle>
+            </svg>
+            <div class="empty-copy">
+              Your score will appear here. Paste a subject line and email body, then run a check to see deliverability risks.
+            </div>
+          </div>
+        </div>
+
+        <div class="results-content" id="results-content" hidden>
+          <div class="results-grid">
+            <div class="result-card">
+              <h3 class="result-heading">Score Circle</h3>
+              <div class="score-placeholder" id="score-circle"></div>
+            </div>
+
+            <div class="result-card">
+              <h3 class="result-heading">Spam Words</h3>
+              <div class="result-placeholder" id="spam-words-list"></div>
+            </div>
+
+            <div class="result-card">
+              <h3 class="result-heading">Subject Analysis</h3>
+              <div class="result-placeholder" id="subject-analysis"></div>
+            </div>
+
+            <div class="result-card">
+              <h3 class="result-heading">Structure Analysis</h3>
+              <div class="result-placeholder" id="structure-analysis"></div>
+            </div>
+
+            <div class="result-card pro-card" id="pro-card" hidden>
+              <h3 class="result-heading">Pro Placeholders</h3>
+              <div class="pro-copy">
+                Pro mode is active. These placeholders are ready for your next iteration: custom blacklist, spintax validation, bulk comparison, SPF/DKIM checks, and AI rewrites.
+              </div>
+              <div class="pro-chip-list">
+                <div class="pro-chip"><strong>Custom Blacklist</strong>Add workspace-specific blocked phrases.</div>
+                <div class="pro-chip"><strong>Spintax</strong>Validate nested spin syntax safely.</div>
+                <div class="pro-chip"><strong>Bulk Check</strong>Compare up to five variants side by side.</div>
+                <div class="pro-chip"><strong>AI Rewrites</strong>Generate cleaner replacements for risky phrasing.</div>
+              </div>
+              <div class="pro-actions">
+                <button class="secondary-button" type="button" disabled>Bulk Compare (Soon)</button>
+                <button class="secondary-button" type="button" disabled>AI Rewrites (Soon)</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="results-footer">
+            <div class="results-hint" id="results-hint"></div>
+            <div class="results-actions">
+              <button class="secondary-button" id="copy-report-button" type="button">Copy Report</button>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <div class="modal" id="pro-modal" hidden>
+    <div class="modal-backdrop" data-close-modal></div>
+    <div class="modal-panel" role="dialog" aria-modal="true" aria-labelledby="pro-modal-title">
+      <div class="modal-title-row">
+        <div>
+          <div class="panel-title">Pro Tier</div>
+          <h2 class="modal-title" id="pro-modal-title">Unlock coldcheck Pro</h2>
+        </div>
+        <button class="modal-close" id="close-pro-modal" type="button" aria-label="Close Pro modal">x</button>
+      </div>
+
+      <p class="modal-copy">
+        Add custom blacklist rules, validate spintax and merge tags, compare multiple variants, and plug in AI-assisted rewrites without leaving the browser.
+      </p>
+
+      <div class="feature-list">
+        <div class="feature-row">Custom blacklist per workspace</div>
+        <div class="feature-row">Spintax and merge-tag validation</div>
+        <div class="feature-row">Bulk compare up to 5 variants</div>
+        <div class="feature-row">AI rewrite suggestions for flagged phrasing</div>
+      </div>
+
+      <div class="pricing-row">
+        <div class="price-pill">$9/mo</div>
+        <div class="price-pill">$79/yr</div>
+      </div>
+
+      <a
+        class="action-button header-link"
+        href="https://www.lemonsqueezy.com/"
+        target="_blank"
+        rel="noreferrer"
+      >
+        Get Pro
+      </a>
+
+      <label class="field" for="license-key-input" style="margin-top: 18px;">
+        <span class="field-label">Enter License Key</span>
+        <input
+          class="text-input"
+          id="license-key-input"
+          name="license-key"
+          type="text"
+          autocomplete="off"
+          placeholder="PASTE-YOUR-KEY-HERE"
+        >
+      </label>
+
+      <div class="modal-actions">
+        <button class="action-button" id="save-license-button" type="button">Save License Key</button>
+        <button class="secondary-button" id="remove-license-button" type="button">Remove License</button>
+      </div>
+
+      <div class="license-feedback" id="license-feedback"></div>
+      <div class="modal-note">Swap the LemonSqueezy URL above with your real checkout link before launch.</div>
+    </div>
+  </div>
+
+  <script>
+    const SPAM_WORDS = {
+      critical: [
+        "free",
+        "guaranteed",
+        "no strings attached",
+        "limited time",
+        "act now",
+        "instant",
+        "urgent",
+        "click here",
+        "exclusive offer",
+        "earn money",
+        "make money fast",
+        "winner",
+        "you've been selected",
+        "congratulations",
+        "cash",
+        "credit card",
+        "risk-free"
+      ],
+      high: [
+        "amazing",
+        "incredible",
+        "discount",
+        "bonus",
+        "deal",
+        "giveaway",
+        "hope you're doing well",
+        "touching base",
+        "circle back",
+        "quick question",
+        "reaching out",
+        "i'd love to chat",
+        "looking forward",
+        "reminder",
+        "just following up",
+        "per my last email",
+        "as promised"
+      ],
+      medium: [
+        "solution",
+        "opportunity",
+        "synergy",
+        "leverage",
+        "utilize",
+        "streamline",
+        "game-changer",
+        "revolutionary",
+        "cutting-edge",
+        "world-class",
+        "best-in-class",
+        "robust",
+        "seamless"
+      ],
+      low: [
+        "excited",
+        "happy to",
+        "pleasure",
+        "hope",
+        "feel free",
+        "don't hesitate",
+        "whenever works",
+        "at your convenience"
+      ]
+    };
+
+    function escapeRegExp(value) {
+      return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    }
+
+    function buildPhraseRegex(phrase) {
+      const tokens = phrase.trim().split(/\s+/).map(escapeRegExp);
+      return new RegExp(`(^|[^a-z0-9])(${tokens.join("\\s+")})(?=$|[^a-z0-9])`, "g");
+    }
+
+    function buildContext(text, start, end) {
+      const contextStart = Math.max(0, start - 30);
+      const contextEnd = Math.min(text.length, end + 30);
+      return text.slice(contextStart, contextEnd).replace(/\s+/g, " ").trim();
+    }
+
+    function overlaps(existingRanges, start, end) {
+      return existingRanges.some((range) => start < range.end && end > range.start);
+    }
+
+    function tierSuggestion(tier) {
+      if (tier === "critical") return "Replace with a specific, grounded claim.";
+      if (tier === "high") return "Rewrite this in plain, direct language.";
+      if (tier === "medium") return "Swap jargon for a concrete description.";
+      return "Trim filler and keep the sentence more direct.";
+    }
+
+    function scanSpamWords(text) {
+      const sourceText = String(text || "");
+      const lowerText = sourceText.toLowerCase();
+      const matches = [];
+      const occupiedRanges = [];
+      const phrases = Object.entries(SPAM_WORDS)
+        .flatMap(([tier, words]) => words.map((word) => ({ tier, word })))
+        .sort((a, b) => b.word.length - a.word.length);
+
+      phrases.forEach(({ tier, word }) => {
+        const regex = buildPhraseRegex(word.toLowerCase());
+        let match;
+
+        while ((match = regex.exec(lowerText)) !== null) {
+          const leadingBoundary = match[1] || "";
+          const matchedText = match[2];
+          const start = match.index + leadingBoundary.length;
+          const end = start + matchedText.length;
+
+          if (overlaps(occupiedRanges, start, end)) {
+            continue;
+          }
+
+          occupiedRanges.push({ start, end });
+          matches.push({
+            word: sourceText.slice(start, end),
+            tier,
+            index: start,
+            context: buildContext(sourceText, start, end),
+            reason: `${word} is commonly associated with promotional or templated email language.`,
+            suggestion: tierSuggestion(tier),
+            source: "phrase"
+          });
+        }
+      });
+
+      let punctuationMatch;
+      const punctuationRegex = /!{3,}/g;
+
+      while ((punctuationMatch = punctuationRegex.exec(sourceText)) !== null) {
+        const start = punctuationMatch.index;
+        const end = start + punctuationMatch[0].length;
+
+        matches.push({
+          word: punctuationMatch[0],
+          tier: "high",
+          index: start,
+          context: buildContext(sourceText, start, end),
+          reason: "Three or more exclamation marks can make cold email look overly promotional.",
+          suggestion: "Use a period or a single exclamation mark.",
+          source: "punctuation"
+        });
+      }
+
+      let capsMatch;
+      const capsRegex = /\b[A-Z]{5,}\b/g;
+
+      while ((capsMatch = capsRegex.exec(sourceText)) !== null) {
+        const start = capsMatch.index;
+        const end = start + capsMatch[0].length;
+
+        matches.push({
+          word: capsMatch[0],
+          tier: "medium",
+          index: start,
+          context: buildContext(sourceText, start, end),
+          reason: "Long ALL CAPS words can trigger aggressive formatting signals.",
+          suggestion: "Use sentence case instead.",
+          source: "capitalization"
+        });
+      }
+
+      return matches.sort((a, b) => a.index - b.index);
+    }
+
+    function analyzeSubject(subject) {
+      const normalizedSubject = String(subject || "").trim();
+      const length = normalizedSubject.length;
+      const tooLong = length > 50;
+      const endsWithQuestion = normalizedSubject.endsWith("?");
+      const allCapsWords = normalizedSubject.match(/\b[A-Z]{2,}\b/g) || [];
+      const hasAllCaps = allCapsWords.length > 0;
+      const spamMatches = scanSpamWords(normalizedSubject);
+      const deductions = [];
+      const suggestions = [];
+
+      if (tooLong) {
+        deductions.push({
+          label: "Subject is over 50 characters",
+          points: 3
+        });
+        suggestions.push("Trim the subject to 50 characters or fewer.");
+      }
+
+      if (endsWithQuestion) {
+        deductions.push({
+          label: "Subject ends with a question mark",
+          points: 3
+        });
+        suggestions.push("Use a direct statement instead of a question subject.");
+      }
+
+      if (hasAllCaps) {
+        deductions.push({
+          label: `Subject contains ALL CAPS wording (${allCapsWords.join(", ")})`,
+          points: 5
+        });
+        suggestions.push("Replace ALL CAPS words with sentence case.");
+      }
+
+      if (spamMatches.length > 0) {
+        suggestions.push("Swap flagged spam terms for more specific, natural wording.");
+      }
+
+      return {
+        length,
+        tooLong,
+        endsWithQuestion,
+        hasAllCaps,
+        spamMatches,
+        deductions,
+        suggestions
+      };
+    }
+
+    function analyzeStructure(body) {
+      const sourceBody = String(body || "");
+      const trimmedBody = sourceBody.trim();
+      const wordMatches = trimmedBody.match(/\b[\w'-]+\b/g) || [];
+      const wordCount = wordMatches.length;
+      const estimatedReadTime = Math.max(1, Math.ceil(wordCount / 200));
+      const sentenceParts = trimmedBody
+        .split(/[.!?]+/)
+        .map((part) => part.trim())
+        .filter(Boolean);
+      const avgSentenceLength = sentenceParts.length
+        ? Math.round(wordCount / sentenceParts.length)
+        : 0;
+      const hasPersonalizationToken = /(\{\{firstName\}\}|\{first_name\}|\{\{name\}\}|\{company\})/i.test(trimmedBody);
+      const rawLines = sourceBody.split(/\r?\n/);
+      const nonEmptyLines = rawLines.map((line) => line.trim()).filter(Boolean);
+      const lastThreeLines = nonEmptyLines.slice(-3);
+      const ctaRegex = /\b(book|reply|let me know|send|schedule|grab)\b/i;
+      const ctaFound = lastThreeLines.some((line) => ctaRegex.test(line));
+      const lastSentence = sentenceParts.length > 0 ? sentenceParts[sentenceParts.length - 1] : "";
+      const trailingQuestion = trimmedBody.endsWith("?");
+      const ctaIsQuestion = ctaFound && trailingQuestion && ctaRegex.test(lastSentence);
+      const paragraphBlocks = sourceBody
+        .split(/\n\s*\n/)
+        .map((block) => block.split(/\r?\n/).filter((line) => line.trim() !== ""));
+      const hasLongParagraph = paragraphBlocks.some((lines) => lines.length > 5);
+
+      return {
+        wordCount,
+        estimatedReadTime,
+        avgSentenceLength,
+        hasPersonalizationToken,
+        ctaFound,
+        ctaIsQuestion,
+        hasLongParagraph
+      };
+    }
+
+    function countMatchesByTier(spamMatches) {
+      return spamMatches.reduce((accumulator, match) => {
+        const next = { ...accumulator };
+        next[match.tier] += 1;
+        return next;
+      }, {
+        critical: 0,
+        high: 0,
+        medium: 0,
+        low: 0
+      });
+    }
+
+    function buildPrimaryIssue(deductions) {
+      if (deductions.length === 0) {
+        return "No major issues detected.";
+      }
+
+      const top = deductions.reduce((highest, current) => {
+        return current.points > highest.points ? current : highest;
+      }, deductions[0]);
+
+      if (top.code === "critical_spam") {
+        return `Remove ${top.count} Critical spam word${top.count === 1 ? "" : "s"} (+${top.points} pts)`;
+      }
+
+      if (top.code === "high_spam") {
+        return `Replace ${top.count} High-risk spam phrase${top.count === 1 ? "" : "s"} (+${top.points} pts)`;
+      }
+
+      if (top.code === "medium_spam") {
+        return `Trim ${top.count} Medium-risk spam phrase${top.count === 1 ? "" : "s"} (+${top.points} pts)`;
+      }
+
+      if (top.code === "low_spam") {
+        return `Clean up ${top.count} Low-risk phrase${top.count === 1 ? "" : "s"} (+${top.points} pts)`;
+      }
+
+      return `${top.label} (+${top.points} pts)`;
+    }
+
+    function computeScore(spamMatches, subjectAnalysis, structureAnalysis) {
+      const tierCounts = countMatchesByTier(spamMatches);
+      const deductions = [];
+      let totalDeduction = 0;
+
+      const spamRules = [
+        { code: "critical_spam", tier: "critical", perHit: 10, max: 30, label: "Critical spam words" },
+        { code: "high_spam", tier: "high", perHit: 5, max: 20, label: "High-risk spam words" },
+        { code: "medium_spam", tier: "medium", perHit: 2, max: 15, label: "Medium-risk spam words" },
+        { code: "low_spam", tier: "low", perHit: 1, max: 10, label: "Low-risk spam words" }
+      ];
+
+      spamRules.forEach((rule) => {
+        const count = tierCounts[rule.tier];
+        if (count === 0) {
+          return;
+        }
+
+        const points = Math.min(rule.max, count * rule.perHit);
+        totalDeduction += points;
+        deductions.push({
+          code: rule.code,
+          label: rule.label,
+          points,
+          count
+        });
+      });
+
+      subjectAnalysis.deductions.forEach((item) => {
+        totalDeduction += item.points;
+        deductions.push({
+          code: item.label.toLowerCase().replace(/[^a-z0-9]+/g, "_"),
+          label: item.label,
+          points: item.points,
+          count: 1
+        });
+      });
+
+      if (structureAnalysis.ctaIsQuestion) {
+        totalDeduction += 5;
+        deductions.push({
+          code: "cta_is_question",
+          label: "CTA is phrased as a question",
+          points: 5,
+          count: 1
+        });
+      }
+
+      if (!structureAnalysis.ctaFound) {
+        totalDeduction += 3;
+        deductions.push({
+          code: "no_cta_found",
+          label: "No CTA found in the last three lines",
+          points: 3,
+          count: 1
+        });
+      }
+
+      if (!structureAnalysis.hasPersonalizationToken) {
+        totalDeduction += 3;
+        deductions.push({
+          code: "no_personalization_token",
+          label: "No personalization token found",
+          points: 3,
+          count: 1
+        });
+      }
+
+      if (structureAnalysis.avgSentenceLength > 20) {
+        totalDeduction += 3;
+        deductions.push({
+          code: "avg_sentence_too_long",
+          label: "Average sentence length is over 20 words",
+          points: 3,
+          count: 1
+        });
+      }
+
+      if (structureAnalysis.hasLongParagraph) {
+        totalDeduction += 2;
+        deductions.push({
+          code: "long_paragraph",
+          label: "Contains a paragraph longer than five lines",
+          points: 2,
+          count: 1
+        });
+      }
+
+      const score = Math.max(0, 100 - totalDeduction);
+      let grade = "F";
+
+      if (score >= 90) {
+        grade = "A";
+      } else if (score >= 75) {
+        grade = "B";
+      } else if (score >= 60) {
+        grade = "C";
+      } else if (score >= 45) {
+        grade = "D";
+      }
+
+      return {
+        score,
+        grade,
+        primaryIssue: buildPrimaryIssue(deductions),
+        deductions
+      };
+    }
+
+    const APP_TITLE = "coldcheck";
+    const LICENSE_STORAGE_KEY = "coldcheck_license_key";
+
+    function gradeColor(grade) {
+      if (grade === "A") return "#22c55e";
+      if (grade === "B") return "#9acd32";
+      if (grade === "C") return "#ff8c00";
+      return "#ff4444";
+    }
+
+    function gradeVerdict(grade) {
+      if (grade === "A") return "Strong - ready to send with minimal cleanup.";
+      if (grade === "B") return "Good - minor fixes needed before sending.";
+      if (grade === "C") return "Risky - tighten the copy before sending.";
+      if (grade === "D") return "Weak - several issues may hurt deliverability.";
+      return "High risk - revise this before it goes out.";
+    }
+
+    function escapeHtml(value) {
+      return String(value)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#39;");
+    }
+
+    function countWords(text) {
+      return (String(text || "").trim().match(/\b[\w'-]+\b/g) || []).length;
+    }
+
+    function updateSubjectCounter() {
+      const subjectInput = document.getElementById("subject-input");
+      const counter = document.getElementById("subject-counter");
+      const length = subjectInput.value.length;
+
+      counter.textContent = `${length} / 50`;
+      counter.classList.toggle("over-limit", length > 50);
+    }
+
+    function updateBodyCounter() {
+      const bodyInput = document.getElementById("body-input");
+      const counter = document.getElementById("body-counter");
+      const words = countWords(bodyInput.value);
+
+      counter.textContent = `${words} word${words === 1 ? "" : "s"}`;
+    }
+
+    function setDefaultTitle() {
+      document.title = APP_TITLE;
+    }
+
+    function setScoreTitle(scoreData) {
+      document.title = `${APP_TITLE} - Score: ${scoreData.score}/100`;
+    }
+
+    function renderPreview(body, spamMatches) {
+      const preview = document.getElementById("preview");
+      const sourceBody = String(body || "");
+
+      if (!sourceBody.trim()) {
+        preview.textContent = "Flagged words will glow here after you run a check.";
+        preview.classList.remove("is-populated");
+        return;
+      }
+
+      const bodyMatches = spamMatches
+        .filter((match) => match.index < sourceBody.length)
+        .sort((a, b) => a.index - b.index);
+
+      let cursor = 0;
+      let html = "";
+
+      bodyMatches.forEach((match, matchIndex) => {
+        const start = match.index;
+        const end = start + match.word.length;
+
+        if (start < cursor) {
+          return;
+        }
+
+        html += escapeHtml(sourceBody.slice(cursor, start));
+        html += `<mark class="${match.tier}" data-match-index="${matchIndex}">${escapeHtml(sourceBody.slice(start, end))}</mark>`;
+        cursor = end;
+      });
+
+      html += escapeHtml(sourceBody.slice(cursor));
+      preview.innerHTML = html;
+      preview.classList.add("is-populated");
+
+      const marks = preview.querySelectorAll("mark");
+
+      marks.forEach((mark) => {
+        mark.addEventListener("click", (event) => {
+          event.stopPropagation();
+          const tooltipIndex = Number(mark.dataset.matchIndex);
+          const match = bodyMatches[tooltipIndex];
+          const existing = preview.querySelector(".mark-tooltip");
+
+          if (existing) {
+            existing.remove();
+          }
+
+          const tooltip = document.createElement("div");
+          tooltip.className = "mark-tooltip";
+          tooltip.innerHTML = `
+            <strong>${match.tier}</strong>
+            <div>${escapeHtml(match.reason)}</div>
+            <div>Try instead: ${escapeHtml(match.suggestion)}</div>
+          `;
+          mark.appendChild(tooltip);
+        });
+      });
+    }
+
+    function renderScoreCircle(scoreData) {
+      const target = document.getElementById("score-circle");
+      const radius = 76;
+      const circumference = 2 * Math.PI * radius;
+      const color = gradeColor(scoreData.grade);
+
+      target.className = "";
+      target.innerHTML = `
+        <div class="score-gauge">
+          <div class="gauge-wrap">
+            <svg class="gauge-svg" viewBox="0 0 200 200" aria-hidden="true">
+              <circle class="gauge-track" cx="100" cy="100" r="${radius}"></circle>
+              <circle
+                class="gauge-progress"
+                cx="100"
+                cy="100"
+                r="${radius}"
+                stroke="${color}"
+                stroke-dasharray="${circumference}"
+                stroke-dashoffset="${circumference}"
+              ></circle>
+            </svg>
+            <div class="gauge-center">
+              <div>
+                <div class="gauge-score" id="animated-score-value">0</div>
+                <div class="gauge-total">/ 100</div>
+              </div>
+            </div>
+          </div>
+          <div class="score-grade">Grade: ${scoreData.grade}</div>
+          <div class="score-verdict">${escapeHtml(gradeVerdict(scoreData.grade))}</div>
+        </div>
+      `;
+
+      const progress = target.querySelector(".gauge-progress");
+      const scoreValue = target.querySelector("#animated-score-value");
+      const duration = 800;
+      const startTime = performance.now();
+
+      function tick(now) {
+        const elapsed = now - startTime;
+        const progressRatio = Math.min(1, elapsed / duration);
+        const eased = 1 - Math.pow(1 - progressRatio, 3);
+        const currentScore = Math.round(scoreData.score * eased);
+        const offset = circumference - (circumference * currentScore) / 100;
+
+        progress.style.strokeDashoffset = String(offset);
+        scoreValue.textContent = String(currentScore);
+
+        if (progressRatio < 1) {
+          requestAnimationFrame(tick);
+        }
+      }
+
+      requestAnimationFrame(tick);
+    }
+
+    function renderSpamWords(spamMatches) {
+      const container = document.getElementById("spam-words-list");
+
+      if (spamMatches.length === 0) {
+        container.innerHTML = `
+          <div class="check-list">
+            <div class="check-row">
+              <div class="check-icon pass">&#10003;</div>
+              <div class="check-copy">No spam words or formatting red flags found.</div>
+            </div>
+          </div>
+        `;
+        return;
+      }
+
+      const groups = ["critical", "high", "medium", "low"]
+        .map((tier) => ({
+          tier,
+          items: spamMatches.filter((match) => match.tier === tier)
+        }))
+        .filter((group) => group.items.length > 0);
+
+      container.innerHTML = `
+        <div class="results-list">
+          ${groups.map((group) => `
+            <section class="tier-group">
+              <h4 class="tier-heading ${group.tier}">${group.tier} (${group.items.length})</h4>
+              <div class="spam-pill-list">
+                ${group.items.map((item) => `
+                  <div class="spam-pill ${item.tier}">
+                    <div class="spam-pill-word">${escapeHtml(item.word)}</div>
+                    <div class="spam-pill-context">${escapeHtml(item.context)}</div>
+                  </div>
+                `).join("")}
+              </div>
+            </section>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function renderCheckList(targetId, checks) {
+      const target = document.getElementById(targetId);
+      target.innerHTML = `
+        <div class="check-list">
+          ${checks.map((check) => `
+            <div class="check-row">
+              <div class="check-icon ${check.passed ? "pass" : "fail"}">${check.passed ? "&#10003;" : "&#10007;"}</div>
+              <div class="check-copy">${escapeHtml(check.label)}</div>
+            </div>
+          `).join("")}
+        </div>
+      `;
+    }
+
+    function renderSubjectAnalysis(subjectAnalysis) {
+      renderCheckList("subject-analysis", [
+        {
+          passed: !subjectAnalysis.tooLong,
+          label: subjectAnalysis.tooLong
+            ? `Too long (${subjectAnalysis.length} characters)`
+            : `Length is in range (${subjectAnalysis.length} characters)`
+        },
+        {
+          passed: !subjectAnalysis.endsWithQuestion,
+          label: subjectAnalysis.endsWithQuestion
+            ? "Ends with a question mark"
+            : "Does not end with a question mark"
+        },
+        {
+          passed: !subjectAnalysis.hasAllCaps,
+          label: subjectAnalysis.hasAllCaps
+            ? "Contains an ALL CAPS word"
+            : "No ALL CAPS wording detected"
+        }
+      ]);
+    }
+
+    function renderStructureAnalysis(structureAnalysis) {
+      renderCheckList("structure-analysis", [
+        {
+          passed: true,
+          label: `Word count: ${structureAnalysis.wordCount} words`
+        },
+        {
+          passed: structureAnalysis.avgSentenceLength <= 20,
+          label: structureAnalysis.avgSentenceLength > 20
+            ? `Average sentence is too long (${structureAnalysis.avgSentenceLength} words)`
+            : `Average sentence length is healthy (${structureAnalysis.avgSentenceLength || 0} words)`
+        },
+        {
+          passed: structureAnalysis.hasPersonalizationToken,
+          label: structureAnalysis.hasPersonalizationToken
+            ? "Personalization token found"
+            : "No personalization token found"
+        },
+        {
+          passed: structureAnalysis.ctaFound && !structureAnalysis.ctaIsQuestion,
+          label: !structureAnalysis.ctaFound
+            ? "No CTA found in the last 3 lines"
+            : structureAnalysis.ctaIsQuestion
+              ? "CTA is phrased as a question"
+              : "CTA is clear and direct"
+        },
+        {
+          passed: !structureAnalysis.hasLongParagraph,
+          label: structureAnalysis.hasLongParagraph
+            ? "Contains an unbroken paragraph longer than 5 lines"
+            : "Paragraph length is manageable"
+        }
+      ]);
+    }
+
+    function estimateCriticalFixHint(scoreData, spamMatches) {
+      const criticalCount = spamMatches.filter((match) => match.tier === "critical").length;
+
+      if (criticalCount === 0) {
+        return "No critical words found. Focus on the highest-impact issue listed above.";
+      }
+
+      const projectedScore = Math.min(100, scoreData.score + Math.min(30, criticalCount * 10));
+      return `Fix ${criticalCount} critical word${criticalCount === 1 ? "" : "s"} -> score jumps to ~${projectedScore}.`;
+    }
+
+    function createPlainTextReport(spamMatches, subjectAnalysis, structureAnalysis, scoreData) {
+      const groupedSpam = ["critical", "high", "medium", "low"]
+        .map((tier) => {
+          const items = spamMatches.filter((match) => match.tier === tier);
+          if (items.length === 0) {
+            return "";
+          }
+
+          return `${tier.toUpperCase()} (${items.length})\n${items.map((item) => `- ${item.word} :: ${item.context}`).join("\n")}`;
+        })
+        .filter(Boolean)
+        .join("\n\n");
+
+      const subjectLines = [
+        `- Length: ${subjectAnalysis.length} characters`,
+        `- Too long: ${subjectAnalysis.tooLong ? "Yes" : "No"}`,
+        `- Ends with question mark: ${subjectAnalysis.endsWithQuestion ? "Yes" : "No"}`,
+        `- Has ALL CAPS word: ${subjectAnalysis.hasAllCaps ? "Yes" : "No"}`
+      ].join("\n");
+
+      const structureLines = [
+        `- Word count: ${structureAnalysis.wordCount}`,
+        `- Estimated read time: ${structureAnalysis.estimatedReadTime} min`,
+        `- Avg sentence length: ${structureAnalysis.avgSentenceLength}`,
+        `- Personalization token found: ${structureAnalysis.hasPersonalizationToken ? "Yes" : "No"}`,
+        `- CTA found: ${structureAnalysis.ctaFound ? "Yes" : "No"}`,
+        `- CTA is question: ${structureAnalysis.ctaIsQuestion ? "Yes" : "No"}`,
+        `- Long paragraph found: ${structureAnalysis.hasLongParagraph ? "Yes" : "No"}`
+      ].join("\n");
+
+      return [
+        "coldcheck report",
+        `Score: ${scoreData.score}/100`,
+        `Grade: ${scoreData.grade}`,
+        `Primary issue: ${scoreData.primaryIssue}`,
+        "",
+        "Spam Words",
+        groupedSpam || "- None found",
+        "",
+        "Subject Analysis",
+        subjectLines,
+        "",
+        "Structure Analysis",
+        structureLines
+      ].join("\n");
+    }
+
+    let lastReportText = "";
+
+    function getStoredLicenseKey() {
+      try {
+        return localStorage.getItem(LICENSE_STORAGE_KEY) || "";
+      } catch (error) {
+        return "";
+      }
+    }
+
+    function showLicenseFeedback(message, tone) {
+      const feedback = document.getElementById("license-feedback");
+      feedback.textContent = message;
+      feedback.classList.remove("is-success", "is-error");
+
+      if (tone === "success") {
+        feedback.classList.add("is-success");
+      } else if (tone === "error") {
+        feedback.classList.add("is-error");
+      }
+    }
+
+    function syncProState() {
+      const hasLicense = Boolean(getStoredLicenseKey().trim());
+      const badge = document.getElementById("pro-status-badge");
+      const licenseButton = document.getElementById("license-button");
+      const licenseInput = document.getElementById("license-key-input");
+      const proCard = document.getElementById("pro-card");
+      const resultsContent = document.getElementById("results-content");
+
+      badge.hidden = !hasLicense;
+      licenseButton.textContent = hasLicense ? "Manage License" : "Enter License Key";
+      licenseInput.value = getStoredLicenseKey();
+      proCard.hidden = !hasLicense || resultsContent.hidden;
+    }
+
+    function openProModal() {
+      document.getElementById("pro-modal").hidden = false;
+      document.body.classList.add("modal-open");
+      syncProState();
+      showLicenseFeedback("", "");
+      window.setTimeout(() => {
+        document.getElementById("license-key-input").focus();
+      }, 0);
+    }
+
+    function closeProModal() {
+      document.getElementById("pro-modal").hidden = true;
+      document.body.classList.remove("modal-open");
+    }
+
+    function saveLicenseKey() {
+      const input = document.getElementById("license-key-input");
+      const value = input.value.trim();
+
+      if (!value) {
+        showLicenseFeedback("Enter a license key before saving.", "error");
+        return;
+      }
+
+      try {
+        localStorage.setItem(LICENSE_STORAGE_KEY, value);
+        showLicenseFeedback("License key saved. Pro placeholders unlocked.", "success");
+        syncProState();
+      } catch (error) {
+        showLicenseFeedback("Could not save the license key in this browser.", "error");
+      }
+    }
+
+    function removeLicenseKey() {
+      try {
+        localStorage.removeItem(LICENSE_STORAGE_KEY);
+        document.getElementById("license-key-input").value = "";
+        showLicenseFeedback("Stored license removed.", "success");
+        syncProState();
+      } catch (error) {
+        showLicenseFeedback("Could not remove the stored license key.", "error");
+      }
+    }
+
+    function showEmptyState() {
+      const resultsEmpty = document.getElementById("results-empty");
+      const resultsContent = document.getElementById("results-content");
+
+      resultsEmpty.hidden = false;
+      resultsContent.hidden = true;
+      resultsContent.classList.remove("is-visible");
+      document.getElementById("pro-card").hidden = true;
+    }
+
+    function resetPreview() {
+      const preview = document.getElementById("preview");
+      preview.textContent = "Flagged words will glow here after you run a check.";
+      preview.classList.remove("is-populated");
+    }
+
+    function renderResults(spamMatches, subjectAnalysis, structureAnalysis, scoreData) {
+      const resultsEmpty = document.getElementById("results-empty");
+      const resultsContent = document.getElementById("results-content");
+      const hint = document.getElementById("results-hint");
+
+      resultsEmpty.hidden = true;
+      resultsContent.hidden = false;
+      resultsContent.classList.remove("is-visible");
+      void resultsContent.offsetWidth;
+      resultsContent.classList.add("is-visible");
+
+      renderScoreCircle(scoreData);
+      renderSpamWords(spamMatches);
+      renderSubjectAnalysis(subjectAnalysis);
+      renderStructureAnalysis(structureAnalysis);
+
+      hint.textContent = `${scoreData.primaryIssue}. ${estimateCriticalFixHint(scoreData, spamMatches)}`;
+      lastReportText = createPlainTextReport(spamMatches, subjectAnalysis, structureAnalysis, scoreData);
+      setScoreTitle(scoreData);
+      syncProState();
+    }
+
+    function runCheck() {
+      const subject = document.getElementById("subject-input").value;
+      const body = document.getElementById("body-input").value;
+      const spamMatches = scanSpamWords(`${body} ${subject}`);
+      const subjectAnalysis = analyzeSubject(subject);
+      const structureAnalysis = analyzeStructure(body);
+      const scoreData = computeScore(spamMatches, subjectAnalysis, structureAnalysis);
+
+      renderResults(spamMatches, subjectAnalysis, structureAnalysis, scoreData);
+      renderPreview(body, spamMatches);
+
+      if (window.matchMedia("(max-width: 900px)").matches) {
+        document.getElementById("results-panel").scrollIntoView({
+          behavior: "smooth",
+          block: "start"
+        });
+      }
+    }
+
+    function resetApp() {
+      document.getElementById("subject-input").value = "";
+      document.getElementById("body-input").value = "";
+      updateSubjectCounter();
+      updateBodyCounter();
+      resetPreview();
+      lastReportText = "";
+      showEmptyState();
+      setDefaultTitle();
+      document.getElementById("results-hint").textContent = "";
+      document.getElementById("copy-report-button").classList.remove("is-active");
+      document.getElementById("copy-report-button").textContent = "Copy Report";
+      syncProState();
+    }
+
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest("mark")) {
+        const activeTooltip = document.querySelector(".mark-tooltip");
+        if (activeTooltip) {
+          activeTooltip.remove();
+        }
+      }
+    });
+
+    document.getElementById("subject-input").addEventListener("input", updateSubjectCounter);
+    document.getElementById("body-input").addEventListener("input", updateBodyCounter);
+
+    document.getElementById("copy-report-button").addEventListener("click", async () => {
+      const button = document.getElementById("copy-report-button");
+      if (!lastReportText) {
+        return;
+      }
+
+      try {
+        await navigator.clipboard.writeText(lastReportText);
+        button.textContent = "Copied";
+        button.classList.add("is-active");
+        window.setTimeout(() => {
+          button.textContent = "Copy Report";
+          button.classList.remove("is-active");
+        }, 1200);
+      } catch (error) {
+        console.error("Copy failed", error);
+      }
+    });
+
+    document.getElementById("check-email-button").addEventListener("click", runCheck);
+    document.getElementById("clear-button").addEventListener("click", resetApp);
+    document.getElementById("pro-button").addEventListener("click", openProModal);
+    document.getElementById("license-button").addEventListener("click", openProModal);
+    document.getElementById("close-pro-modal").addEventListener("click", closeProModal);
+    document.querySelector("[data-close-modal]").addEventListener("click", closeProModal);
+    document.getElementById("save-license-button").addEventListener("click", saveLicenseKey);
+    document.getElementById("remove-license-button").addEventListener("click", removeLicenseKey);
+
+    document.addEventListener("keydown", (event) => {
+      const modalIsOpen = !document.getElementById("pro-modal").hidden;
+      const isCheckShortcut = (event.metaKey || event.ctrlKey) && event.key === "Enter";
+
+      if (isCheckShortcut && !modalIsOpen) {
+        event.preventDefault();
+        runCheck();
+      }
+
+      if (event.key === "Escape" && modalIsOpen) {
+        closeProModal();
+      }
+    });
+
+    updateSubjectCounter();
+    updateBodyCounter();
+    resetPreview();
+    showEmptyState();
+    setDefaultTitle();
+    syncProState();
+  </script>
+</body>
+</html>
