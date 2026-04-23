@@ -1,4 +1,5 @@
-.env
-*.db
-__pycache__/
-*.py[cod]
+# Keep only the coldcheck site in this repository.
+*
+!.gitignore
+!coldcheck/
+!coldcheck/**
