@@ -25,10 +25,15 @@ jobs:
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 
+      - name: Prepare site artifact
+        run: |
+          mkdir -p _site
+          cp -R coldcheck/. _site/
+
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v4
         with:
-          path: coldcheck
+          path: _site
 
   deploy:
     environment:
